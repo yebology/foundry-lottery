@@ -44,6 +44,9 @@ contract Raffle is VRFConsumerBaseV2 {
     event WinnerPicked(
         address indexed winner
     );
+    event RequestedRaffleWinner(
+        uint256 indexed requiestId
+    );
     
     constructor(
         uint256 entranceFee,
@@ -52,6 +55,7 @@ contract Raffle is VRFConsumerBaseV2 {
         bytes32 gasLane,
         uint64 subscriptionId,
         uint32 callbackGasLimit
+
     ) VRFConsumerBaseV2(vrfCoordinator) {
         i_entranceFee = entranceFee;
         i_interval = interval;
@@ -65,6 +69,26 @@ contract Raffle is VRFConsumerBaseV2 {
 
     function getEntranceFee() external view returns (uint256) {
         return i_entranceFee;
+    }
+
+    function getRaffleState() external view returns (RaffleState) {
+        return s_raffleState;
+    }
+
+    function getPlayer(uint256 indexOfPlayer) external view returns (address) {
+        return s_players[indexOfPlayer];
+    }
+
+    function getRecentWinner() external view returns (address) {
+        return s_recentWinner;
+    }
+
+    function getLengthOfPlayers() external view returns(uint256) {
+        return s_players.length;
+    }
+
+    function getLastTimeStamp() external view returns(uint256) {
+        return s_lastTimeStamp;
     }
 
     function enterRaffle() external payable {
@@ -98,13 +122,14 @@ contract Raffle is VRFConsumerBaseV2 {
         }
         
         s_raffleState = RaffleState.CALCULATING;
-        i_vrfCoordinator.requestRandomWords(
+        uint256 requestId = i_vrfCoordinator.requestRandomWords(
             i_gasLane,
             i_subscriptionId,
             REQUEST_CONFIRMATION,
             i_callbackGasLimit,
             NUM_WORDS
         );
+        emit RequestedRaffleWinner(requestId);
     }
 
     function fulfillRandomWords(
@@ -114,7 +139,7 @@ contract Raffle is VRFConsumerBaseV2 {
         uint256 indexOfWinner = randomWords[0] % s_players.length;
         address payable winner = s_players[indexOfWinner];
         s_recentWinner = winner;
-        s_raffleState = RaffleState.CLOSED;
+        s_raffleState = RaffleState.OPEN;
 
         s_players = new address payable[](0);
         s_lastTimeStamp = block.timestamp;
