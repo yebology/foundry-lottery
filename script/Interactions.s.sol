@@ -99,6 +99,7 @@ contract AddConsumer is Script {
         (, , address vrfCoordinator, , uint64 subId, , , uint256 deployerKey) = helperConfig.activeNetworkConfig();
         addConsumer(raffle, vrfCoordinator, subId, deployerKey);
     }
+    
 
     function addConsumer(
         address raffle, 
