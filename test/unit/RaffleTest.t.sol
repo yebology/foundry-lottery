@@ -34,6 +34,13 @@ contract RaffleTest is Test {
         _;
     }
 
+    modifier skipFork() {
+        if (block.chainid != 31337) {
+            return;
+        }
+        _;
+    }
+
     function setUp() external {
         DeployRaffle deployer = new DeployRaffle();
         (raffle, helperConfig) = deployer.run();
@@ -143,13 +150,13 @@ contract RaffleTest is Test {
     function testPerformUpKeepReverts() public {
         uint256 currBalance = 0;
         uint256 numPlayers = 0;
-        uint256 raffleState = 0;
+        Raffle.RaffleState rState = raffle.getRaffleState();
         vm.expectRevert(
             abi.encodeWithSelector(
                 Raffle.Raffle__UpKeepNotNeeded.selector,
                 currBalance,
                 numPlayers,
-                raffleState
+                rState
             )
         );
         raffle.performUpKeep("");
@@ -171,7 +178,7 @@ contract RaffleTest is Test {
 
     function testFulfillRandomWordsCalledAfterPerformUpKeep(
         uint256 randomRequestId
-    ) public raffleEnteredAndTimePassed {
+    ) public raffleEnteredAndTimePassed skipFork {
         vm.expectRevert("nonexistent request");
         VRFCoordinatorV2Mock(vrfCoordinator).fulfillRandomWords(
             randomRequestId,
@@ -181,7 +188,7 @@ contract RaffleTest is Test {
 
     function testFulfillRandomWordsPickAWinnerResetAndSendMoney()
         public
-        raffleEnteredAndTimePassed
+        raffleEnteredAndTimePassed skipFork
     {
         uint256 additionalEntrants = 5;
         uint256 startingIndex = 1;
